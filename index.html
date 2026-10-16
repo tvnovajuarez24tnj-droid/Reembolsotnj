@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reembolso - TV NOVA JUAREZ</title>
+    <style>
+        /* Reset e Estilos Globais */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0d0d0d; /* Fundo escuro como na logo */
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Container Principal (Estilo Card) */
+        .container {
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border: 2px solid #b8860b; /* Borda dourada */
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(184, 134, 11, 0.2);
+            text-align: center;
+        }
+
+        /* Cabeçalho da Logo */
+        .logo-header {
+            margin-bottom: 30px;
+        }
+
+        .logo-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .logo-header p {
+            color: #aaaaaa;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        /* Formulário */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cccccc;
+            font-size: 0.95rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 14px;
+            background-color: #222222;
+            border: 1px solid #444444;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            border-color: #ffd700;
+        }
+
+        /* Botão de Busca */
+        .btn-buscar {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            border: none;
+            border-radius: 10px;
+            color: #000000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-buscar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn-buscar:active {
+            transform: scale(0.98);
+        }
+
+        /* Área de Resultado */
+        .resultado-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+            display: none; /* Escondido até ser calculado */
+        }
+
+        .resultado-box.show {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .resultado-titulo {
+            font-size: 1.1rem;
+            color: #aaaaaa;
+            margin-bottom: 10px;
+        }
+
+        .resultado-valor {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff88; /* Verde para reembolso */
+        }
+
+        .resultado-valor.sem-reembolso {
+            color: #ff4444; /* Vermelho para sem reembolso */
+            font-size: 1.4rem;
+        }
+
+        .detalhes {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #888888;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Cabeçalho Personalizado -->
+        <div class="logo-header">
+            <h1>TV NOVA JUAREZ</h1>
+            <p>Sistema de Reembolso</p>
+        </div>
+
+        <!-- Formulário de Consulta -->
+        <form id="formReembolso" onsubmit="calcularReembolso(event)">
+            
+            <div class="form-group">
+                <label for="categoria">Selecione o Produto:</label>
+                <select id="categoria" required>
+                    <option value="">-- Escolha uma opção --</option>
+                    <option value="iptv">IPTV Streaming</option>
+                    <option value="sites">Sites e Sistemas Operacionais</option>
+                    <option value="redes">Redes Sociais</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="valor">Valor Pago (R$):</label>
+                <input type="number" id="valor" placeholder="Ex: 60, 100, 61..." min="1" step="0.01" required>
+            </div>
+
+            <button type="submit" class="btn-buscar">Buscar Reembolso</button>
+        </form>
+
+        <!-- Área de Resultado -->
+        <div id="resultado" class="resultado-box">
+            <div class="resultado-titulo">Valor do Reembolso:</div>
+            <div id="valorReembolso" class="resultado-valor">R$ 0,00</div>
+            <div id="detalhes" class="detalhes"></div>
+        </div>
+    </div>
+
+    <script>
+        function calcularReembolso(event) {
+            // Impede o recarregamento da página
+            event.preventDefault();
+
+            // Pega os valores do formulário
+            const categoria = document.getElementById('categoria').value;
+            const valorInput = document.getElementById('valor').value;
+            const valor = parseFloat(valorInput);
+
+            // Elementos de exibição
+            const resultadoBox = document.getElementById('resultado');
+            const displayValor = document.getElementById('valorReembolso');
+            const displayDetalhes = document.getElementById('detalhes');
+
+            // Mostra a caixa de resultado
+            resultadoBox.classList.add('show');
+
+            let valorReembolso = 0;
+            let mensagem = "";
+            let temReembolso = false;
+
+            // Lógica de Reembolso
+            // 1. Verifica se é um valor exato da tabela principal
+            if (valor === 60) {
+                valorReembolso = 30;
+                temReembolso = true;
+            } else if (valor === 80) {
+                valorReembolso = 40;
+                temReembolso = true;
+            } else if (valor === 100) {
+                valorReembolso = 50;
+                temReembolso = true;
+            } else if (valor === 200) {
+                valorReembolso = 100;
+                temReembolso = true;
+            } else if (valor === 300) {
+                valorReembolso = 200;
+                temReembolso = true;
+            } else if (valor === 400) {
+                valorReembolso = 300;
+                temReembolso = true;
+            } else if (valor === 500) {
+                valorReembolso = 400;
+                temReembolso = true;
+            } 
+            // 2. Regra dos valores de 1 a 9 (Ex: 61, 71, 81, 91...)
+            else if (valor >= 61 && valor <= 69) {
+                temReembolso = false;
+                mensagem = "Valores com finais de 1 a 9 (ex: 61, 62... 69) não possuem reembolso.";
+            } else if (valor >= 71 && valor <= 79) {
+                temReembolso = false;
+                mensagem = "Valores com finais de 1 a 9 (ex: 71, 72... 79) não possuem reembolso.";
+            } else if (valor >= 81 && valor <= 89) {
+                temReembolso = false;
+                mensagem = "Valores com finais de 1 a 9 (ex: 81, 82... 89) não possuem reembolso.";
+            } else if (valor >= 91 && valor <= 99) {
+                temReembolso = false;
+                mensagem = "Valores com finais de 1 a 9 (ex: 91, 92... 99) não possuem reembolso.";
+            }
+            // 3. Regras de valores sem reembolso (40 e 50)
+            else if (valor === 40 || valor === 50) {
+                temReembolso = false;
+                mensagem = "Este valor não possui reembolso conforme a tabela.";
+            } 
+            // 4. Qualquer outro valor não listado
+            else {
+                temReembolso = false;
+                mensagem = "Valor não encontrado na tabela de reembolso. Consulte o suporte.";
+            }
+
+            // Exibição do Resultado
+            if (temReembolso) {
+                displayValor.textContent = `R$ ${valorReembolso.toFixed(2).replace('.', ',')}`;
+                displayValor.className = 'resultado-valor'; // Reset para cor verde
+                displayDetalhes.textContent = `Produto: ${categoria.toUpperCase()} | Valor Pago: R$ ${valor.toFixed(2).replace('.', ',')}`;
+            } else {
+                displayValor.textContent = "SEM REEMBOLSO";
+                displayValor.className = 'resultado-valor sem-reembolso'; // Muda para cor vermelha
+                displayDetalhes.textContent = mensagem;
+            }
+        }
+    </script>
+</body>
+</html>
